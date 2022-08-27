@@ -1,9 +1,11 @@
 from crypt import methods
 import os
+from sre_constants import SUCCESS
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
+from sqlalchemy import desc
 
 from models import setup_db, Question, Category
 
@@ -50,6 +52,7 @@ def create_app(test_config=None):
     @app.route('/v1/categories', methods=['GET'])
     def category():
         categories = Category.query.all()
+        
         category = [category.format() for category in categories]
         
         print(category)
@@ -137,73 +140,81 @@ def create_app(test_config=None):
             print('aborted')
             abort(422)
 
-"""
-    @TODO:
-    Create an endpoint to DELETE question using a question ID.
 
-    TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page.
-    """
+   # TEST: When you click the trash icon next to a question, the question will be removed.
+    #This removal will persist in the database and when you refresh the page.
+    
             
 
-#============================DONE==========================================
+#============================DONE======================@TODO:
+#Create an endpoint to DELETE question using a question ID.====================
 
+
+
+
+    @app.route('/v1/new-question', methods=['POST'])
+    def create_question():
+        body = request.get_json()
+
+        new_question = body.get('question', None)
+        new_answer = body.get('answer', None)
+        new_category = body.get('category', None)
+        new_difficulty = body.get('difficulty', None)
+
+        try:
+            question = Question(question=new_question, answer=new_answer, category=new_category, difficulty=new_difficulty)
+            question.insert()
+
+            questions = Question.query.order_by(Question.id).all()
+            current_books = paginate_books(request, questions)
+
+            return jsonify({
+            'success': True,
+            'created': question.id,
+            'questions': current_books,
+            'total_questions': len(Question.query.all())
+
+            }) 
+
+
+        except:
+            print("error posting!")
+            abort(422)
+
+    
+
+    @app.route('/v1/questions', methods=['POST'])
+    def search_question():
+ 
+        body = request.get_json()
+
+        #getting the value of the searched parameter
+        search_questions = body.get('question', None)
+        question = f'{search_questions}'
+        
+        question_search = Question.query.filter(Question.question.ilike('%what%')).order_by(Question.id).all()
+        print(question_search)
+
+        current_question = paginate_books(request, question_search)
+        print(current_question)
+
+       
+        return jsonify({
+            'success': True,
+            'name':  question ,
+            'searched-question': current_question,
+            'number_of_questions': len(Question.query.filter(Question.question.ilike("%what%")).order_by(Question.id).all()
+        )
 
             
 
+        })
+        
+       
 
+               
+
+    return app
        
 
   
-
-"""
-    @TODO:
-    Create an endpoint to POST a new question,
-    which will require the question and answer text,
-    category, and difficulty score.
-
-    TEST: When you submit a question on the "Add" tab,
-    the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.
-    """
-
-    """
-    @TODO:
-    Create a POST endpoint to get questions based on a search term.
-    It should return any questions for whom the search term
-    is a substring of the question.
-
-    TEST: Search by any phrase. The questions list will update to include
-    only question that include that string within their question.
-    Try using the word "title" to start.
-    """
-
-    """
-    @TODO:
-    Create a GET endpoint to get questions based on category.
-
-    TEST: In the "List" tab / main screen, clicking on one of the
-    categories in the left column will cause only questions of that
-    category to be shown.
-    """
-
-    """
-    @TODO:
-    Create a POST endpoint to get questions to play the quiz.
-    This endpoint should take category and previous question parameters
-    and return a random questions within the given category,
-    if provided, and that is not one of the previous questions.
-
-    TEST: In the "Play" tab, after a user selects "All" or a category,
-    one question at a time is displayed, the user is allowed to answer
-    and shown whether they were correct or not.
-    """
-
-    """
-    @TODO:
-    Create error handlers for all expected errors
-    including 404 and 422.
-    """
-
-    return app
-
