@@ -31,6 +31,10 @@ def paginate_questions(request, selection):
 
     return current_questions
 
+def generate_random_integers(selection):
+    num = random.randint(0 , len(selection) - 1)
+    return num
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
@@ -59,6 +63,7 @@ def create_app(test_config=None):
   
 
 #===this one gets all categories in the  Play section
+#1
     @app.route('/categories', methods=['GET'])
     def category():
         categories = Category.query.all()
@@ -115,6 +120,8 @@ def create_app(test_config=None):
             
             }) """
 
+
+#2
     @app.route('/categories/<int:category_id>/questions')
     def retrieve_category_questions(category_id):
         try:
@@ -137,22 +144,12 @@ def create_app(test_config=None):
 
 
 
-    """
-    @TODO:
-    Create an endpoint to handle GET requests for questions,
-    including pagination (every 10 questions).
-    This endpoint should return a list of questions,
-    number of total questions, current category, categories.
-
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions.
-    """
+#3
 
     #========================DONE=====================================================
 #====This is a delete function for the questions
-    @app.route('/v1/questions/<int:question_id>', methods=['GET'])
+#--3. => DELETE QUESTIONS
+    """ @app.route('/questions/<int:question_id>', methods=['GET'])
     def delete_question(question_id):
         try:
             question = Question.query.filter(Question.id== question_id).one_or_none()
@@ -162,7 +159,7 @@ def create_app(test_config=None):
 
             question.delete()
             questions = Question.query.order_by(Question.id).all()
-            current_books = paginate_books(request, questions)
+            current_question = paginate_books(request, questions)
 
             print(question)
             print(len(Question.query.all()))
@@ -171,13 +168,35 @@ def create_app(test_config=None):
             return jsonify({
                 'success': True,
                 'deleted' : question_id,   
-                'questions' : current_books,
+                'questions' : current_question,
                 'total_questions' : len(Question.query.all())
                 })
         except:
             print('aborted')
-            abort(422)
+            abort(422) """
 
+
+    @app.route('/questions/<int:question_id>', methods=['DELETE'])
+    def delete_question(question_id):
+        try:
+            question=Question.query.filter(Question.id==question_id).one_or_none()
+            if question is None:
+                abort(404)
+            question.delete()
+            selection = Question.query.order_by(Question.id).all()
+            current_questions = paginate_questions(request, selection)
+
+            return jsonify({
+                "success": True,
+                "deleted": question_id,
+                "questions": current_questions,
+                "total_questions": len(selection)
+            })
+        except:
+            db.session.rollback()
+            abort(404)
+        finally:
+            db.session.close()
 
    # TEST: When you click the trash icon next to a question, the question will be removed.
     #This removal will persist in the database and when you refresh the page.
@@ -220,7 +239,31 @@ def create_app(test_config=None):
             print("error posting!")
             abort(422)
 
+    
+    #this one is used to get all the questions in the home page
+    #--DONE===
+    @app.route("/questions", methods = ['GET'])
+    def retrieve_questions():
+        questions = Question.query.order_by(Question.id).all()
+        current_questions = paginate_questions(request, questions)
+        categories = Category.query.order_by(Category.id).all()
+
+
+        if len(current_questions) == 0:
+            abort(404)
+
+        return jsonify({
+                "success": True,
+                "questions": current_questions,
+                "total_questions": len(Question.query.all()),
+                "current_category": categories[0].type,
+                "categories": {category.id:category.type for category in categories}
+            })
+
     #=================DONE=======================================
+
+
+    
 
     
 
@@ -255,7 +298,7 @@ def create_app(test_config=None):
         })
 
     @app.route("/quizzes", methods=["POST"])
-    def retrieve_quizzes():
+    def quizes_and_answer():
         body = request.get_json()
         quiz_category = body.get('quiz_category')
         previous_questions = body.get('previous_questions')
