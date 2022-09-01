@@ -267,7 +267,7 @@ def create_app(test_config=None):
 
     
 
-    @app.route('/questions/search', methods=['POST'])
+    @app.route('/questions', methods=['POST'])
     def search_question():
         search = request.form.get('search_term')
         print(search)
@@ -282,18 +282,19 @@ def create_app(test_config=None):
         question_search = Question.query.filter(Question.question.ilike('%'+question+'%')).order_by(Question.id).all()
         print(question_search)
 
+        current_category = Category.query.filter(Category.id==question_search.id).all()
+
+
+
         current_question = paginate_books(request, question_search)
         print(current_question)
 
        
         return jsonify({
             'success': True,
-            'name':  question ,
-            'searched-question': current_question,
-            'number_of_questions': len(Question.query.filter(Question.question.ilike('%'+question+'%')).order_by(Question.id).all()
-        )
-
-            
+            'questions':  current_question ,
+            'total_questions': len(Question.query.filter(Question.question.ilike('%'+question+'%')).order_by(Question.id).all()),
+            'current_category': current_category            
 
         })
 
